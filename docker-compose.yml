@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  minio:
+    image: quay.io/minio/minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_LOG_LEVEL=debug
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - scystream-net
+
+networks:
+  scystream-net:
+    driver: bridge
+
+volumes:
+  minio_data:
+  search_query:

@@ -1,0 +1,5 @@
+scystream-sdk==1.2.2
+spacy==3.8.7
+nltk==3.9.1
+numpy==2.3.3
+bibtexparser==1.4.3

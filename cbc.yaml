@@ -1,0 +1,100 @@
+author: Paul Kalhorn 
+description: Language preprocessing for .txt or .bib files
+docker_image: ghcr.io/rwth-time/language-preprocessing/language-preprocessing
+entrypoints:
+  preprocess_bib_file:
+    description: Entrypoint for preprocessing a .bib file
+    envs:
+      FILTER_STOPWORDS: true
+      LANGUAGE: en
+      NGRAM_MAX: 3
+      NGRAM_MIN: 2
+      UNIGRAM_NORMALIZER: porter
+      USE_NGRAMS: true
+    inputs:
+      bib_input:
+        config:
+          bib_file_BUCKET_NAME: null
+          bib_file_FILE_EXT: bib
+          bib_file_FILE_NAME: null
+          bib_file_FILE_PATH: null
+          bib_file_S3_ACCESS_KEY: null
+          bib_file_S3_HOST: null
+          bib_file_S3_PORT: null
+          bib_file_S3_SECRET_KEY: null
+          bib_file_SELECTED_ATTRIBUTE: Abstract
+        description: The bib file, aswell as one attribute selected for preprocessing 
+        type: file
+    outputs:
+      dtm_output:
+        config:
+          dtm_output_BUCKET_NAME: null
+          dtm_output_FILE_EXT: pkl
+          dtm_output_FILE_NAME: null
+          dtm_output_FILE_PATH: null
+          dtm_output_S3_ACCESS_KEY: null
+          dtm_output_S3_HOST: null
+          dtm_output_S3_PORT: null
+          dtm_output_S3_SECRET_KEY: null
+        description: Numpy representation of document-term matrix as .pkl file 
+        type: file
+      vocab_output:
+        config:
+          vocab_output_BUCKET_NAME: null
+          vocab_output_FILE_EXT: pkl
+          vocab_output_FILE_NAME: null
+          vocab_output_FILE_PATH: null
+          vocab_output_S3_ACCESS_KEY: null
+          vocab_output_S3_HOST: null
+          vocab_output_S3_PORT: null
+          vocab_output_S3_SECRET_KEY: null
+        description: Pkl file of a dictionary that maps all words to their index in the DTM
+        type: file
+  preprocess_txt_file:
+    description: Entrypoint to preprocess a .txt file
+    envs:
+      FILTER_STOPWORDS: true
+      LANGUAGE: en
+      NGRAM_MAX: 3
+      NGRAM_MIN: 2
+      UNIGRAM_NORMALIZER: porter
+      USE_NGRAMS: true
+    inputs:
+      txt_input:
+        config:
+          txt_file_BUCKET_NAME: null
+          txt_file_FILE_EXT: txt
+          txt_file_FILE_NAME: null
+          txt_file_FILE_PATH: null
+          txt_file_S3_ACCESS_KEY: null
+          txt_file_S3_HOST: null
+          txt_file_S3_PORT: null
+          txt_file_S3_SECRET_KEY: null
+        description: A .txt file 
+        type: file
+    outputs:
+      dtm_output:
+        config:
+          dtm_output_BUCKET_NAME: null
+          dtm_output_FILE_EXT: pkl
+          dtm_output_FILE_NAME: null
+          dtm_output_FILE_PATH: null
+          dtm_output_S3_ACCESS_KEY: null
+          dtm_output_S3_HOST: null
+          dtm_output_S3_PORT: null
+          dtm_output_S3_SECRET_KEY: null
+        description: Numpy representation of document-term matrix as .pkl file
+        type: file
+      vocab_output:
+        config:
+          vocab_output_BUCKET_NAME: null
+          vocab_output_FILE_EXT: pkl
+          vocab_output_FILE_NAME: null
+          vocab_output_FILE_PATH: null
+          vocab_output_S3_ACCESS_KEY: null
+          vocab_output_S3_HOST: null
+          vocab_output_S3_PORT: null
+          vocab_output_S3_SECRET_KEY: null
+        description: Pkl file of a dictionary that maps all words to their index in the DTM
+        type: file
+name: Language-Preprocessing
