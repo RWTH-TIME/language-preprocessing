@@ -5,17 +5,17 @@ import bibtexparser
 def normalize_text(text: str) -> str:
     if not text:
         return ""
-    # Remove curly braces
+
+    text = re.sub(r"\\[a-zA-Z]+\{([^}]*)\}", r"\1", text)
+
+    text = re.sub(r"\\[a-zA-Z]+", "", text)
+
     text = re.sub(r"[{}]", "", text)
 
-    # Remove LaTeX commands
-    text = re.sub(r"\\[a-zA-Z]+\s*(\{[^}]*\})?", "", text)
-
-    # Remove LaTeX escaped quotes/accents
-    text = re.sub(r"\\""[a-zA-Z]", lambda m: m.group(0)[-1], text)
+    text = re.sub(r'\\"([a-zA-Z])', r'\1', text)
 
     text = re.sub(r"\\'", "", text)
-    text = text.replace("'", "")
+
     text = re.sub(r"\s+", " ", text)
 
     return text.strip()

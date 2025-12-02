@@ -1,4 +1,5 @@
-name: Docker
+name: CI
+
 on:
   push:
     branches:
@@ -10,9 +11,55 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  lint-python:
+    name: Lint Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          cache: "pip"
+
+      - name: Run flake8
+        uses: py-actions/flake8@v2
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint-python
+    services:
+      minio:
+        image: lazybit/minio
+        ports:
+          - 9000:9000
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 5s
+          --health-retries 5
+          --health-timeout 5s
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Tests
+        run: pytest -vv
+
   build:
     name: Build docker image
     runs-on: ubuntu-latest
+    needs: test
     permissions:
       contents: read
       packages: write
@@ -42,3 +89,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
