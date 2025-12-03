@@ -1,5 +1,8 @@
+import logging
 import re
 import bibtexparser
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_text(text: str) -> str:
@@ -24,6 +27,7 @@ def normalize_text(text: str) -> str:
 class TxtLoader:
     @staticmethod
     def load(file_path: str) -> list[str]:
+        logger.info("Loading TXT file...")
         with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         return [normalize_text(line) for line in lines]
@@ -32,6 +36,7 @@ class TxtLoader:
 class BibLoader:
     @staticmethod
     def load(file_path: str, attribute: str) -> list[str]:
+        logger.info(f"Loading BIB file (attribute={attribute})...")
         with open(file_path, "r", encoding="utf-8") as f:
             bib_database = bibtexparser.load(f)
 

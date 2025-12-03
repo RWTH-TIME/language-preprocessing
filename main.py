@@ -1,5 +1,6 @@
 import pickle
 import tempfile
+import logging
 
 from scystream.sdk.core import entrypoint
 from scystream.sdk.env.settings import (
@@ -12,6 +13,13 @@ from scystream.sdk.file_handling.s3_manager import S3Operations
 
 from preprocessing.core import Preprocessor
 from preprocessing.loader import TxtLoader, BibLoader
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class DTMFileOutput(FileSettings, OutputSettings):
@@ -66,6 +74,8 @@ class PreprocessBIB(EnvSettings):
 
 def _preprocess_and_store(texts, settings):
     """Shared preprocessing logic for TXT and BIB."""
+    logger.info(f"Starting preprocessing with {len(texts)} documents")
+
     pre = Preprocessor(
         language=settings.LANGUAGE,
         filter_stopwords=settings.FILTER_STOPWORDS,
@@ -74,10 +84,12 @@ def _preprocess_and_store(texts, settings):
         ngram_min=settings.NGRAM_MIN,
         ngram_max=settings.NGRAM_MAX,
     )
-    pre.texts = texts
 
+    pre.texts = texts
     pre.analyze_texts()
+
     pre.generate_bag_of_words()
+
     dtm, vocab = pre.generate_document_term_matrix()
 
     with tempfile.NamedTemporaryFile(suffix="_dtm.pkl") as tmp_dtm, \
@@ -89,20 +101,30 @@ def _preprocess_and_store(texts, settings):
         pickle.dump(vocab, tmp_vocab)
         tmp_vocab.flush()
 
+        logger.info("Uploading DTM to S3...")
         S3Operations.upload(settings.dtm_output, tmp_dtm.name)
+
+        logger.info("Uploading vocabulary to S3...")
         S3Operations.upload(settings.vocab_output, tmp_vocab.name)
+
+    logger.info("Preprocessing completed successfully.")
 
 
 @entrypoint(PreprocessTXT)
 def preprocess_txt_file(settings):
+    logger.info("Downloading TXT input from S3...")
     S3Operations.download(settings.txt_input, "input.txt")
+
     texts = TxtLoader.load("./input.txt")
+
     _preprocess_and_store(texts, settings)
 
 
 @entrypoint(PreprocessBIB)
 def preprocess_bib_file(settings):
+    logger.info("Downloading BIB input from S3...")
     S3Operations.download(settings.bib_input, "input.bib")
+
     texts = BibLoader.load(
         "./input.bib",
         attribute=settings.bib_input.SELECTED_ATTRIBUTE,
