@@ -48,7 +48,7 @@ class BIBFileInput(FileSettings, InputSettings):
 class PreprocessTXT(EnvSettings):
     LANGUAGE: str = "en"
     FILTER_STOPWORDS: bool = True
-    UNIGRAM_NORMALIZER: str = "porter"
+    UNIGRAM_NORMALIZER: str = "lemma"
     USE_NGRAMS: bool = True
     NGRAM_MIN: int = 2
     NGRAM_MAX: int = 3
@@ -63,7 +63,7 @@ class PreprocessTXT(EnvSettings):
 class PreprocessBIB(EnvSettings):
     LANGUAGE: str = "en"
     FILTER_STOPWORDS: bool = True
-    UNIGRAM_NORMALIZER: str = "porter"
+    UNIGRAM_NORMALIZER: str = "lemma"
     USE_NGRAMS: bool = True
     NGRAM_MIN: int = 2
     NGRAM_MAX: int = 3
