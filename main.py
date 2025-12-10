@@ -14,7 +14,6 @@ from scystream.sdk.file_handling.s3_manager import S3Operations
 from preprocessing.core import Preprocessor
 from preprocessing.loader import TxtLoader, BibLoader
 
-
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -54,6 +53,8 @@ class PreprocessTXT(EnvSettings):
     NGRAM_MIN: int = 2
     NGRAM_MAX: int = 3
 
+    TXT_DOWNLOAD_PATH: str = "/tmp/input.txt"
+
     txt_input: TXTFileInput
     dtm_output: DTMFileOutput
     vocab_output: VocabFileOutput
@@ -66,6 +67,8 @@ class PreprocessBIB(EnvSettings):
     USE_NGRAMS: bool = True
     NGRAM_MIN: int = 2
     NGRAM_MAX: int = 3
+
+    BIB_DOWNLOAD_PATH: str = "/tmp/input.bib"
 
     bib_input: BIBFileInput
     dtm_output: DTMFileOutput
@@ -113,9 +116,9 @@ def _preprocess_and_store(texts, settings):
 @entrypoint(PreprocessTXT)
 def preprocess_txt_file(settings):
     logger.info("Downloading TXT input from S3...")
-    S3Operations.download(settings.txt_input, "input.txt")
+    S3Operations.download(settings.txt_input, settings.TXT_DOWNLOAD_PATH)
 
-    texts = TxtLoader.load("./input.txt")
+    texts = TxtLoader.load(settings.TXT_DOWNLOAD_PATH)
 
     _preprocess_and_store(texts, settings)
 
@@ -123,10 +126,10 @@ def preprocess_txt_file(settings):
 @entrypoint(PreprocessBIB)
 def preprocess_bib_file(settings):
     logger.info("Downloading BIB input from S3...")
-    S3Operations.download(settings.bib_input, "input.bib")
+    S3Operations.download(settings.bib_input, settings.BIB_DOWNLOAD_PATH)
 
     texts = BibLoader.load(
-        "./input.bib",
+        settings.BIB_DOWNLOAD_PATH,
         attribute=settings.bib_input.SELECTED_ATTRIBUTE,
     )
     _preprocess_and_store(texts, settings)

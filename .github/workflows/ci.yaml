@@ -38,7 +38,7 @@ jobs:
       - name: Intall dependencies
         run: |
           pip install -r requirements.txt
-
+      
       - name: Check cbcs
         run: |
           python3 - <<'EOF'
