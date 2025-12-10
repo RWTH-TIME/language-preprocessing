@@ -57,6 +57,8 @@ def test_full_bib(s3_minio):
     )
 
     env = {
+        "UNIGRAM_NORMALIZER": "porter",
+
         "bib_file_S3_HOST": "http://127.0.0.1",
         "bib_file_S3_PORT": "9000",
         "bib_file_S3_ACCESS_KEY": MINIO_USER,
@@ -140,6 +142,8 @@ def test_full_txt(s3_minio):
     )
 
     env = {
+        "UNIGRAM_NORMALIZER": "porter",
+
         "txt_file_S3_HOST": "http://127.0.0.1",
         "txt_file_S3_PORT": "9000",
         "txt_file_S3_ACCESS_KEY": MINIO_USER,
