@@ -10,7 +10,7 @@ entrypoints:
       LANGUAGE: en
       NGRAM_MAX: 3
       NGRAM_MIN: 2
-      UNIGRAM_NORMALIZER: porter
+      UNIGRAM_NORMALIZER: lemma
       USE_NGRAMS: true
     inputs:
       bib_input:
@@ -59,7 +59,7 @@ entrypoints:
       NGRAM_MAX: 3
       NGRAM_MIN: 2
       TXT_DOWNLOAD_PATH: /tmp/input.txt
-      UNIGRAM_NORMALIZER: porter
+      UNIGRAM_NORMALIZER: lemma
       USE_NGRAMS: true
     inputs:
       txt_input:
