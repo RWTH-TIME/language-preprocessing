@@ -13,13 +13,16 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
-    networks:
-      - scystream-net
 
-networks:
-  scystream-net:
-    driver: bridge
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
 
 volumes:
   minio_data:
-  search_query:
