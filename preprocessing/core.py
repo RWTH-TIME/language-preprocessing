@@ -1,3 +1,4 @@
+import logging
 import spacy
 import numpy as np
 
@@ -9,6 +10,7 @@ LANG_TO_SPACY_MODELS = {
     "en": "en_core_web_sm",
     "de": "de_core_news_sm"
 }
+logger = logging.getLogger(__name__)
 
 
 class Preprocessor:
@@ -21,6 +23,12 @@ class Preprocessor:
         ngram_min: int = 2,
         ngram_max: int = 3,
     ):
+        logger.info(
+            "Init Preprocessor (lang=%s, filter_stopwords=%s, ngrams=%s)",
+            language,
+            filter_stopwords,
+            use_ngrams,
+        )
         self.language = language
         self.filter_stopwords = filter_stopwords
         self.unigram_normalizer = unigram_normalizer
@@ -58,6 +66,7 @@ class Preprocessor:
         ]
 
     def analyze_texts(self):
+        logger.info(f"Analyzing {len(self.texts)} texts...")
         porter = PorterStemmer()
         for text in self.texts:
             doc = self.nlp(text)
@@ -67,8 +76,8 @@ class Preprocessor:
 
             for sentence in doc.sents:
                 filtered_tokens = self.filter_tokens(
-                        list(sentence),
-                        self.filter_stopwords
+                    list(sentence),
+                    self.filter_stopwords
                 )
                 normalized_tokens = [
                     self.normalize_token(t, porter) for t in filtered_tokens
@@ -93,6 +102,10 @@ class Preprocessor:
             if ngram_list:
                 self.ngram_frequency.update(ngram_list)
                 self.ngram_document_frequency.update(set(ngram_list))
+        logger.info(
+            f"Finished analyzing texts: {self.token_frequency} unigrams, {
+                self.ngram_frequency} n-grams",
+        )
 
     def normalize_token(
         self,
@@ -110,6 +123,7 @@ class Preprocessor:
         return word
 
     def generate_bag_of_words(self):
+        logger.info("Generating bag-of-words...")
         porter = PorterStemmer()
         self.bag_of_words = []
 
@@ -177,7 +191,7 @@ class Preprocessor:
             dtm (np.ndarray): shape = (num_docs, num_terms)
             vocab (dict): mapping term -> column index
         """
-
+        logger.info("Building document-term-matrix...")
         all_terms = set()
         for doc in self.bag_of_words:
             for t in doc:
@@ -194,4 +208,5 @@ class Preprocessor:
                 term_idx = vocab[token["term"]]
                 dtm[doc_idx, term_idx] += 1
 
+        logger.info(f"Matrix shape: {dtm.shape} | Vocab size: {len(vocab)}")
         return dtm, vocab

@@ -1,15 +1,16 @@
 author: Paul Kalhorn 
 description: Language preprocessing for .txt or .bib files
-docker_image: ghcr.io/rwth-time/language-preprocessing/language-preprocessing
+docker_image: ghcr.io/rwth-time/language-preprocessing/language-preprocessing 
 entrypoints:
   preprocess_bib_file:
-    description: Entrypoint for preprocessing a .bib file
+    description: Entrypoint for preprocessing a .bib file 
     envs:
+      BIB_DOWNLOAD_PATH: /tmp/input.bib
       FILTER_STOPWORDS: true
       LANGUAGE: en
       NGRAM_MAX: 3
       NGRAM_MIN: 2
-      UNIGRAM_NORMALIZER: porter
+      UNIGRAM_NORMALIZER: lemma
       USE_NGRAMS: true
     inputs:
       bib_input:
@@ -23,7 +24,7 @@ entrypoints:
           bib_file_S3_PORT: null
           bib_file_S3_SECRET_KEY: null
           bib_file_SELECTED_ATTRIBUTE: Abstract
-        description: The bib file, aswell as one attribute selected for preprocessing 
+        description: The bib file, aswell as one attribute selected for preprocessing
         type: file
     outputs:
       dtm_output:
@@ -36,7 +37,7 @@ entrypoints:
           dtm_output_S3_HOST: null
           dtm_output_S3_PORT: null
           dtm_output_S3_SECRET_KEY: null
-        description: Numpy representation of document-term matrix as .pkl file 
+        description: Numpy representation of document-term matrix as .pkl file
         type: file
       vocab_output:
         config:
@@ -57,7 +58,8 @@ entrypoints:
       LANGUAGE: en
       NGRAM_MAX: 3
       NGRAM_MIN: 2
-      UNIGRAM_NORMALIZER: porter
+      TXT_DOWNLOAD_PATH: /tmp/input.txt
+      UNIGRAM_NORMALIZER: lemma
       USE_NGRAMS: true
     inputs:
       txt_input:
@@ -70,7 +72,7 @@ entrypoints:
           txt_file_S3_HOST: null
           txt_file_S3_PORT: null
           txt_file_S3_SECRET_KEY: null
-        description: A .txt file 
+        description: A .txt file
         type: file
     outputs:
       dtm_output:
