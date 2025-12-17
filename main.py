@@ -1,18 +1,21 @@
-import pickle
-import tempfile
 import logging
+import pandas as pd
+from sqlalchemy import create_engine
 
+from typing import List
 from scystream.sdk.core import entrypoint
 from scystream.sdk.env.settings import (
     EnvSettings,
     InputSettings,
     OutputSettings,
-    FileSettings
+    FileSettings,
+    PostgresSettings
 )
 from scystream.sdk.file_handling.s3_manager import S3Operations
 
 from preprocessing.core import Preprocessor
 from preprocessing.loader import TxtLoader, BibLoader
+from preprocessing.models import DocumentRecord, PreprocessedDocument
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,16 +24,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class DTMFileOutput(FileSettings, OutputSettings):
-    __identifier__ = "dtm_output"
-
-    FILE_EXT: str = "pkl"
-
-
-class VocabFileOutput(FileSettings, OutputSettings):
-    __identifier__ = "vocab_output"
-
-    FILE_EXT: str = "pkl"
+class NormalizedDocsOutput(PostgresSettings, OutputSettings):
+    __identifier__ = "normalized_docs"
 
 
 class TXTFileInput(FileSettings, InputSettings):
@@ -56,8 +51,7 @@ class PreprocessTXT(EnvSettings):
     TXT_DOWNLOAD_PATH: str = "/tmp/input.txt"
 
     txt_input: TXTFileInput
-    dtm_output: DTMFileOutput
-    vocab_output: VocabFileOutput
+    normalized_docs_output: NormalizedDocsOutput
 
 
 class PreprocessBIB(EnvSettings):
@@ -71,13 +65,37 @@ class PreprocessBIB(EnvSettings):
     BIB_DOWNLOAD_PATH: str = "/tmp/input.bib"
 
     bib_input: BIBFileInput
-    dtm_output: DTMFileOutput
-    vocab_output: VocabFileOutput
+    normalized_docs_output: NormalizedDocsOutput
 
 
-def _preprocess_and_store(texts, settings):
+def _write_preprocessed_docs_to_postgres(
+        preprocessed_ouput: List[PreprocessedDocument],
+        settings: PostgresSettings
+):
+    df = pd.DataFrame([
+        {
+            "doc_id": d.doc_id,
+            "tokens": d.tokens
+        }
+        for d in preprocessed_ouput
+    ])
+
+    logger.info(f"Writing {len(df)} processed documents to DB table '{
+                settings.DB_TABLE}'…")
+    engine = create_engine(
+        f"postgresql+psycopg2://{settings.PG_USER}:{settings.PG_PASS}"
+        f"@{settings.PG_HOST}:{int(settings.PG_PORT)}/"
+    )
+
+    df.to_sql(settings.DB_TABLE, engine, if_exists="replace", index=False)
+
+    logger.info(f"Successfully stored normalized documents into '{
+                settings.DB_TABLE}'.")
+
+
+def _preprocess_and_store(documents: List[DocumentRecord], settings):
     """Shared preprocessing logic for TXT and BIB."""
-    logger.info(f"Starting preprocessing with {len(texts)} documents")
+    logger.info(f"Starting preprocessing with {len(documents)} documents")
 
     pre = Preprocessor(
         language=settings.LANGUAGE,
@@ -88,27 +106,11 @@ def _preprocess_and_store(texts, settings):
         ngram_max=settings.NGRAM_MAX,
     )
 
-    pre.texts = texts
-    pre.analyze_texts()
+    pre.documents = documents
+    result = pre.generate_normalized_output()
 
-    pre.generate_bag_of_words()
-
-    dtm, vocab = pre.generate_document_term_matrix()
-
-    with tempfile.NamedTemporaryFile(suffix="_dtm.pkl") as tmp_dtm, \
-            tempfile.NamedTemporaryFile(suffix="_vocab.pkl") as tmp_vocab:
-
-        pickle.dump(dtm, tmp_dtm)
-        tmp_dtm.flush()
-
-        pickle.dump(vocab, tmp_vocab)
-        tmp_vocab.flush()
-
-        logger.info("Uploading DTM to S3...")
-        S3Operations.upload(settings.dtm_output, tmp_dtm.name)
-
-        logger.info("Uploading vocabulary to S3...")
-        S3Operations.upload(settings.vocab_output, tmp_vocab.name)
+    _write_preprocessed_docs_to_postgres(
+        result, settings.normalized_docs_output)
 
     logger.info("Preprocessing completed successfully.")
 
