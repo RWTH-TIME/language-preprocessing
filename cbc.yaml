@@ -1,9 +1,9 @@
-author: Paul Kalhorn 
+author: Paul Kalhorn
 description: Language preprocessing for .txt or .bib files
-docker_image: ghcr.io/rwth-time/language-preprocessing/language-preprocessing 
+docker_image: ghcr.io/rwth-time/language-preprocessing/language-preprocessing
 entrypoints:
   preprocess_bib_file:
-    description: Entrypoint for preprocessing a .bib file 
+    description: Entrypoint for preprocessing an attribute of a .bib file
     envs:
       BIB_DOWNLOAD_PATH: /tmp/input.bib
       FILTER_STOPWORDS: true
@@ -27,30 +27,15 @@ entrypoints:
         description: The bib file, aswell as one attribute selected for preprocessing
         type: file
     outputs:
-      dtm_output:
+      normalized_docs_output:
         config:
-          dtm_output_BUCKET_NAME: null
-          dtm_output_FILE_EXT: pkl
-          dtm_output_FILE_NAME: null
-          dtm_output_FILE_PATH: null
-          dtm_output_S3_ACCESS_KEY: null
-          dtm_output_S3_HOST: null
-          dtm_output_S3_PORT: null
-          dtm_output_S3_SECRET_KEY: null
-        description: Numpy representation of document-term matrix as .pkl file
-        type: file
-      vocab_output:
-        config:
-          vocab_output_BUCKET_NAME: null
-          vocab_output_FILE_EXT: pkl
-          vocab_output_FILE_NAME: null
-          vocab_output_FILE_PATH: null
-          vocab_output_S3_ACCESS_KEY: null
-          vocab_output_S3_HOST: null
-          vocab_output_S3_PORT: null
-          vocab_output_S3_SECRET_KEY: null
-        description: Pkl file of a dictionary that maps all words to their index in the DTM
-        type: file
+          normalized_docs_DB_TABLE: null
+          normalized_docs_PG_HOST: null
+          normalized_docs_PG_PASS: null
+          normalized_docs_PG_PORT: null
+          normalized_docs_PG_USER: null
+        description: Database Output, containing bib_id aswell as the normalized text
+        type: pg_table
   preprocess_txt_file:
     description: Entrypoint to preprocess a .txt file
     envs:
@@ -72,31 +57,16 @@ entrypoints:
           txt_file_S3_HOST: null
           txt_file_S3_PORT: null
           txt_file_S3_SECRET_KEY: null
-        description: A .txt file
+        description: A .txt file, each line will be treated as a document
         type: file
     outputs:
-      dtm_output:
+      normalized_docs_output:
         config:
-          dtm_output_BUCKET_NAME: null
-          dtm_output_FILE_EXT: pkl
-          dtm_output_FILE_NAME: null
-          dtm_output_FILE_PATH: null
-          dtm_output_S3_ACCESS_KEY: null
-          dtm_output_S3_HOST: null
-          dtm_output_S3_PORT: null
-          dtm_output_S3_SECRET_KEY: null
-        description: Numpy representation of document-term matrix as .pkl file
-        type: file
-      vocab_output:
-        config:
-          vocab_output_BUCKET_NAME: null
-          vocab_output_FILE_EXT: pkl
-          vocab_output_FILE_NAME: null
-          vocab_output_FILE_PATH: null
-          vocab_output_S3_ACCESS_KEY: null
-          vocab_output_S3_HOST: null
-          vocab_output_S3_PORT: null
-          vocab_output_S3_SECRET_KEY: null
-        description: Pkl file of a dictionary that maps all words to their index in the DTM
-        type: file
+          normalized_docs_DB_TABLE: null
+          normalized_docs_PG_HOST: null
+          normalized_docs_PG_PASS: null
+          normalized_docs_PG_PORT: null
+          normalized_docs_PG_USER: null
+        description: Database Output, containing bib_id aswell as the normalized text
+        type: pg_table
 name: Language-Preprocessing

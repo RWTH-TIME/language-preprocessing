@@ -1,26 +1,43 @@
-def test_preprocessor_tokenization(preprocessor, simple_texts):
-    preprocessor.texts = simple_texts
-    preprocessor.analyze_texts()
-
-    assert len(preprocessor.token_frequency) > 0
+from preprocessing.core import Preprocessor
+from preprocessing.models import DocumentRecord
 
 
-def test_preprocessor_bag_of_words(preprocessor, simple_texts):
-    preprocessor.texts = simple_texts
-    preprocessor.analyze_texts()
-    preprocessor.generate_bag_of_words()
+def test_preprocessor_generate_normalized_output():
+    # Prepare input documents as dataclasses
+    docs = [
+        DocumentRecord(doc_id="1", text="Dogs are running fast."),
+        DocumentRecord(doc_id="2", text="Cats jump high.")
+    ]
 
-    assert len(preprocessor.bag_of_words) == 2
-    assert all(len(doc) > 0 for doc in preprocessor.bag_of_words)
+    pre = Preprocessor(
+        language="en",
+        filter_stopwords=True,
+        unigram_normalizer="lemma",
+        use_ngrams=True,
+        ngram_min=2,
+        ngram_max=2,
+    )
 
+    pre.documents = docs
+    output = pre.generate_normalized_output()
 
-def test_generate_document_term_matrix(preprocessor, simple_texts):
-    preprocessor.texts = simple_texts
-    preprocessor.analyze_texts()
-    preprocessor.generate_bag_of_words()
+    # Basic structure checks
+    assert len(output) == 2
+    assert output[0].doc_id == "1"
+    assert output[1].doc_id == "2"
 
-    dtm, vocab = preprocessor.generate_document_term_matrix()
+    # Tokens must not be empty
+    assert len(output[0].tokens) > 0
+    assert len(output[1].tokens) > 0
 
-    assert dtm.shape[0] == 2
-    assert dtm.shape[1] == len(vocab)
-    assert dtm.sum() > 0
+    # Check that lemmatization worked
+    # "running" → "run"
+    assert "run" in output[0].tokens
+
+    # Stopwords filtered → "are" removed
+    assert "are" not in output[0].tokens
+
+    # Check n-gram generation (bigram because ngram_min=ngram_max=2)
+    # Example bigram from doc1: "dog run" (if spacy lemmatizes)
+    bigrams_doc1 = [tok for tok in output[0].tokens if " " in tok]
+    assert len(bigrams_doc1) > 0  # at least one n-gram produced
