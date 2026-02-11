@@ -15,6 +15,9 @@ BUCKET_NAME = "testbucket"
 PG_USER = "postgres"
 PG_PASS = "postgres"
 
+INPUT_FILE_NAME = "input"
+OUTPUT_FILE_NAME = "output"
+
 
 def parse_pg_array(arr: str) -> list[str]:
     # Convert Postgres literal → Python list
@@ -55,15 +58,13 @@ def s3_minio():
 
 
 def test_full_bib(s3_minio):
-    input_file_name = "input"
-
-    bib_path = Path(__file__).parent / "files" / f"{input_file_name}.bib"
+    bib_path = Path(__file__).parent / "files" / f"{INPUT_FILE_NAME}.bib"
     bib_bytes = bib_path.read_bytes()
 
     # Upload to MinIO
     s3_minio.put_object(
         Bucket=BUCKET_NAME,
-        Key=f"{input_file_name}.bib",
+        Key=f"{INPUT_FILE_NAME}.bib",
         Body=bib_bytes
     )
 
@@ -79,7 +80,7 @@ def test_full_bib(s3_minio):
         "bib_file_S3_SECRET_KEY": MINIO_PWD,
         "bib_file_BUCKET_NAME": BUCKET_NAME,
         "bib_file_FILE_PATH": "",
-        "bib_file_FILE_NAME": input_file_name,
+        "bib_file_FILE_NAME": INPUT_FILE_NAME,
         "bib_file_SELECTED_ATTRIBUTE": "abstract",
 
         # PostgreSQL output
@@ -88,6 +89,14 @@ def test_full_bib(s3_minio):
         "normalized_docs_PG_USER": PG_USER,
         "normalized_docs_PG_PASS": PG_PASS,
         "normalized_docs_DB_TABLE": "normalized_docs_bib",
+
+        "normalized_overwritten_file_output_S3_HOST": "http://127.0.0.1",
+        "normalized_overwritten_file_output_S3_PORT": "9000",
+        "normalized_overwritten_file_output_S3_ACCESS_KEY": MINIO_USER,
+        "normalized_overwritten_file_output_S3_SECRET_KEY": MINIO_PWD,
+        "normalized_overwritten_file_output_BUCKET_NAME": BUCKET_NAME,
+        "normalized_overwritten_file_output_FILE_PATH": "",
+        "normalized_overwritten_file_output_FILE_NAME": OUTPUT_FILE_NAME
     }
 
     for k, v in env.items():
@@ -122,17 +131,17 @@ def test_full_bib(s3_minio):
     assert isinstance(df.iloc[0]["tokens"], list)
     assert all(isinstance(t, str) for t in df.iloc[0]["tokens"])
 
+    # TODO: Test overwritten file upload
+
 
 def test_full_txt(s3_minio):
-    input_file_name = "input"
-
-    txt_path = Path(__file__).parent / "files" / f"{input_file_name}.txt"
+    txt_path = Path(__file__).parent / "files" / f"{INPUT_FILE_NAME}.txt"
     txt_bytes = txt_path.read_bytes()
 
     # Upload input to MinIO
     s3_minio.put_object(
         Bucket=BUCKET_NAME,
-        Key=f"{input_file_name}.txt",
+        Key=f"{INPUT_FILE_NAME}.txt",
         Body=txt_bytes
     )
 
@@ -146,7 +155,7 @@ def test_full_txt(s3_minio):
         "txt_file_S3_SECRET_KEY": MINIO_PWD,
         "txt_file_BUCKET_NAME": BUCKET_NAME,
         "txt_file_FILE_PATH": "",
-        "txt_file_FILE_NAME": input_file_name,
+        "txt_file_FILE_NAME": INPUT_FILE_NAME,
 
         # Postgres output
         "normalized_docs_PG_HOST": "localhost",
@@ -154,6 +163,14 @@ def test_full_txt(s3_minio):
         "normalized_docs_PG_USER": PG_USER,
         "normalized_docs_PG_PASS": PG_PASS,
         "normalized_docs_DB_TABLE": "normalized_docs_txt",
+
+        "normalized_overwritten_file_output_S3_HOST": "http://127.0.0.1",
+        "normalized_overwritten_file_output_S3_PORT": "9000",
+        "normalized_overwritten_file_output_S3_ACCESS_KEY": MINIO_USER,
+        "normalized_overwritten_file_output_S3_SECRET_KEY": MINIO_PWD,
+        "normalized_overwritten_file_output_BUCKET_NAME": BUCKET_NAME,
+        "normalized_overwritten_file_output_FILE_PATH": "",
+        "normalized_overwritten_file_output_FILE_NAME": OUTPUT_FILE_NAME
     }
 
     for k, v in env.items():
@@ -177,3 +194,5 @@ def test_full_txt(s3_minio):
 
     assert isinstance(df.iloc[0]["tokens"], list)
     assert all(isinstance(t, str) for t in df.iloc[0]["tokens"])
+
+    # TODO: Test overwritten file upload
