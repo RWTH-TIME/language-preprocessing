@@ -76,7 +76,7 @@ class Preprocessor:
                 if self.use_ngrams and self.ngram_min > 1:
                     for n in range(self.ngram_min, self.ngram_max + 1):
                         for i in range(len(normalized) - n + 1):
-                            ngram = " ".join(normalized[i : i + n])
+                            ngram = " ".join(normalized[i:i + n])  # fmt: off
                             doc_terms.append(ngram)
 
             processed_docs.append(
