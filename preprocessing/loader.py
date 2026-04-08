@@ -16,7 +16,7 @@ def normalize_text(text: str) -> str:
     text = re.sub(r"\\[a-zA-Z]+\{([^}]*)\}", r"\1", text)
     text = re.sub(r"\\[a-zA-Z]+", "", text)
     text = re.sub(r"[{}]", "", text)
-    text = re.sub(r'\\"([a-zA-Z])', r'\1', text)
+    text = re.sub(r'\\"([a-zA-Z])', r"\1", text)
     text = re.sub(r"\\'", "", text)
     text = re.sub(r"\s+", " ", text)
 
@@ -30,10 +30,7 @@ class TxtLoader:
             lines = f.readlines()
 
         return [
-            DocumentRecord(
-                doc_id=str(i),
-                text=normalize_text(line)
-            )
+            DocumentRecord(doc_id=str(i), text=normalize_text(line))
             for i, line in enumerate(lines, start=1)
         ]
 
@@ -47,10 +44,7 @@ class TxtLoader:
         output_path = Path.cwd() / export_path.name
 
         # Ensure correct order (IDs are numeric strings)
-        sorted_docs = sorted(
-            preprocessed_docs,
-            key=lambda d: int(d.doc_id)
-        )
+        sorted_docs = sorted(preprocessed_docs, key=lambda d: int(d.doc_id))
 
         with open(output_path, "w", encoding="utf-8") as f:
             for doc in sorted_docs:
@@ -91,27 +85,18 @@ class BibLoader:
             raw_value = entry.get(self.attribute, "")
             normalized = normalize_text(raw_value)
 
-            records.append(
-                DocumentRecord(
-                    doc_id=bib_id,
-                    text=normalized
-                )
-            )
+            records.append(DocumentRecord(doc_id=bib_id, text=normalized))
 
         return records
 
     def overwrite_with_results(
-        self,
-        preprocessed_docs: List[PreprocessedDocument],
-        export_path: Path
+        self, preprocessed_docs: List[PreprocessedDocument], export_path: Path
     ) -> None:
         logger.info("Overwriting input documents with preprocessed text...")
 
         output_path = Path.cwd() / export_path.name
 
-        preprocessed_dict = {
-            doc.doc_id: doc for doc in preprocessed_docs
-        }
+        preprocessed_dict = {doc.doc_id: doc for doc in preprocessed_docs}
 
         for entry in self.bib_db.entries:
             bib_id = self._extract_bib_id(entry)

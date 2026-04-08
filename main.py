@@ -10,7 +10,7 @@ from scystream.sdk.env.settings import (
     InputSettings,
     OutputSettings,
     FileSettings,
-    PostgresSettings
+    PostgresSettings,
 )
 from scystream.sdk.file_handling.s3_manager import S3Operations
 
@@ -18,9 +18,15 @@ from preprocessing.core import Preprocessor
 from preprocessing.loader import TxtLoader, BibLoader
 from preprocessing.models import DocumentRecord, PreprocessedDocument
 
+from scystream.sdk.config.config_loader import (
+    get_compute_block,
+    generate_config_from_compute_block,
+)
+
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -82,19 +88,18 @@ class PreprocessBIB(EnvSettings):
 
 
 def _write_preprocessed_docs_to_postgres(
-        preprocessed_ouput: List[PreprocessedDocument],
-        settings: PostgresSettings
+    preprocessed_ouput: List[PreprocessedDocument], settings: PostgresSettings
 ):
-    df = pd.DataFrame([
-        {
-            "doc_id": d.doc_id,
-            "tokens": d.tokens
-        }
-        for d in preprocessed_ouput
-    ])
+    df = pd.DataFrame(
+        [{"doc_id": d.doc_id, "tokens": d.tokens} for d in preprocessed_ouput]
+    )
 
-    logger.info(f"Writing {len(df)} processed documents to DB table '{
-                settings.DB_TABLE}'…")
+    logger.info(
+        f"""
+        Writing {len(df)} processed documents to 
+        DB table '{settings.DB_TABLE}'…
+        """
+    )
     engine = create_engine(
         f"postgresql+psycopg2://{settings.PG_USER}:{settings.PG_PASS}"
         f"@{settings.PG_HOST}:{int(settings.PG_PORT)}/"
@@ -102,8 +107,9 @@ def _write_preprocessed_docs_to_postgres(
 
     df.to_sql(settings.DB_TABLE, engine, if_exists="replace", index=False)
 
-    logger.info(f"Successfully stored normalized documents into '{
-                settings.DB_TABLE}'.")
+    logger.info(
+        f"Successfully stored normalized documents into '{settings.DB_TABLE}'."
+    )
 
 
 def _preprocess_and_store(
@@ -127,18 +133,17 @@ def _preprocess_and_store(
     result = pre.generate_normalized_output()
 
     _write_preprocessed_docs_to_postgres(
-        result,
-        settings.normalized_docs_output
+        result, settings.normalized_docs_output
     )
 
     # Overwrite file using injected behavior
-    export_path = Path(f"output.{
-        settings.normalized_overwritten_file_output.FILE_EXT}")
+    export_path = Path(
+        f"output.{settings.normalized_overwritten_file_output.FILE_EXT}"
+    )
     overwrite_callback(result, export_path)
 
     S3Operations.upload(
-        settings.normalized_overwritten_file_output,
-        export_path
+        settings.normalized_overwritten_file_output, export_path
     )
 
     logger.info("Preprocessing completed successfully.")
@@ -155,7 +160,7 @@ def preprocess_txt_file(settings):
     _preprocess_and_store(
         documents=documents,
         overwrite_callback=TxtLoader.overwrite_with_results,
-        settings=settings
+        settings=settings,
     )
 
 
@@ -166,11 +171,17 @@ def preprocess_bib_file(settings):
 
     loader = BibLoader(
         file_path=settings.BIB_DOWNLOAD_PATH,
-        attribute=settings.bib_input.SELECTED_ATTRIBUTE
+        attribute=settings.bib_input.SELECTED_ATTRIBUTE,
     )
 
     _preprocess_and_store(
         documents=loader.document_records,
         overwrite_callback=loader.overwrite_with_results,
-        settings=settings
+        settings=settings,
     )
+
+
+if __name__ == "__main__":
+    cb = get_compute_block()
+
+    generate_config_from_compute_block(cb, Path("test.yaml"))

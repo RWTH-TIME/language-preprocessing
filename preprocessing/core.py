@@ -5,10 +5,7 @@ from typing import Literal, List
 from nltk.stem.porter import PorterStemmer
 from preprocessing.models import PreprocessedDocument, DocumentRecord
 
-LANG_TO_SPACY_MODELS = {
-    "en": "en_core_web_sm",
-    "de": "de_core_news_sm"
-}
+LANG_TO_SPACY_MODELS = {"en": "en_core_web_sm", "de": "de_core_news_sm"}
 logger = logging.getLogger(__name__)
 
 
@@ -45,12 +42,11 @@ class Preprocessor:
         self.documents: List[DocumentRecord] = []
 
     def filter_tokens(
-        self,
-        tokens: list[spacy.tokens.Token],
-        filter_stopwords: bool = False
+        self, tokens: list[spacy.tokens.Token], filter_stopwords: bool = False
     ) -> list[spacy.tokens.Token]:
         return [
-            t for t in tokens
+            t
+            for t in tokens
             if t.is_alpha
             and (not filter_stopwords or not t.is_stop)
             and len(t.text) > 2
@@ -80,20 +76,17 @@ class Preprocessor:
                 if self.use_ngrams and self.ngram_min > 1:
                     for n in range(self.ngram_min, self.ngram_max + 1):
                         for i in range(len(normalized) - n + 1):
-                            ngram = " ".join(normalized[i:i+n])
+                            ngram = " ".join(normalized[i : i + n])
                             doc_terms.append(ngram)
 
-            processed_docs.append(PreprocessedDocument(
-                doc_id=record.doc_id,
-                tokens=doc_terms
-            ))
+            processed_docs.append(
+                PreprocessedDocument(doc_id=record.doc_id, tokens=doc_terms)
+            )
 
         return processed_docs
 
     def normalize_token(
-        self,
-        token: spacy.tokens.Token,
-        porter: PorterStemmer
+        self, token: spacy.tokens.Token, porter: PorterStemmer
     ):
         """Apply lemma or stem normalization."""
         word = token.text.lower() if not token.text.isupper() else token.text

@@ -36,6 +36,18 @@ entrypoints:
           normalized_docs_PG_USER: null
         description: Database Output, containing bib_id aswell as the normalized text
         type: pg_table
+      normalized_overwritten_file_output:
+        config:
+          normalized_overwritten_file_output_BUCKET_NAME: null
+          normalized_overwritten_file_output_FILE_EXT: bib
+          normalized_overwritten_file_output_FILE_NAME: null
+          normalized_overwritten_file_output_FILE_PATH: null
+          normalized_overwritten_file_output_S3_ACCESS_KEY: null
+          normalized_overwritten_file_output_S3_HOST: null
+          normalized_overwritten_file_output_S3_PORT: null
+          normalized_overwritten_file_output_S3_SECRET_KEY: null
+        description: The File Input Overwritten with the normalized output
+        type: file
   preprocess_txt_file:
     description: Entrypoint to preprocess a .txt file
     envs:
@@ -69,4 +81,16 @@ entrypoints:
           normalized_docs_PG_USER: null
         description: Database Output, containing bib_id aswell as the normalized text
         type: pg_table
+      normalized_overwritten_file_output:
+        config:
+          normalized_overwritten_file_output_BUCKET_NAME: null
+          normalized_overwritten_file_output_FILE_EXT: txt
+          normalized_overwritten_file_output_FILE_NAME: null
+          normalized_overwritten_file_output_FILE_PATH: null
+          normalized_overwritten_file_output_S3_ACCESS_KEY: null
+          normalized_overwritten_file_output_S3_HOST: null
+          normalized_overwritten_file_output_S3_PORT: null
+          normalized_overwritten_file_output_S3_SECRET_KEY: null
+        description: The File Input Overwritten with the normalized output
+        type: file
 name: Language-Preprocessing

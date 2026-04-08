@@ -36,10 +36,7 @@ def test_bib_loader_extracts_attribute():
         f.write(bib_content)
         fname = f.name
 
-    loader = BibLoader(
-        file_path=fname,
-        attribute="abstract"
-    )
+    loader = BibLoader(file_path=fname, attribute="abstract")
 
     result = loader.document_records
     os.unlink(fname)
