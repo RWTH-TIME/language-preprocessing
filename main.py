@@ -1,21 +1,24 @@
 import logging
-
 import pandas as pd
-from preprocessing.core import Preprocessor
-from preprocessing.loader import BibLoader, TxtLoader
-from preprocessing.models import DocumentRecord, PreprocessedDocument
+
+from pathlib import Path
+from typing import List
 from scystream.sdk.core import entrypoint
 from scystream.sdk.env.settings import (
     EnvSettings,
-    FileSettings,
     InputSettings,
     OutputSettings,
     DatabaseSettings,
+    FileSettings,
 )
 from scystream.sdk.file_handling.s3_manager import S3Operations
 from scystream.sdk.database_handling.database_manager import (
     PandasDatabaseOperations,
 )
+
+from preprocessing.core import Preprocessor
+from preprocessing.loader import TxtLoader, BibLoader
+from preprocessing.models import DocumentRecord, PreprocessedDocument
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +29,11 @@ logger = logging.getLogger(__name__)
 
 class NormalizedDocsOutput(DatabaseSettings, OutputSettings):
     __identifier__ = "normalized_docs"
+
+
+class NormalizedTXTOutput(FileSettings, OutputSettings):
+    __identifier__ = "normalized_overwritten_file_output"
+    FILE_EXT: str = "txt"
 
 
 class TXTFileInput(FileSettings, InputSettings):
@@ -40,6 +48,11 @@ class BIBFileInput(FileSettings, InputSettings):
     SELECTED_ATTRIBUTE: str = "Abstract"
 
 
+class NormalizedBIBOutput(FileSettings, OutputSettings):
+    __identifier__ = "normalized_overwritten_file_output"
+    FILE_EXT: str = "bib"
+
+
 class PreprocessTXT(EnvSettings):
     LANGUAGE: str = "en"
     FILTER_STOPWORDS: bool = True
@@ -52,6 +65,7 @@ class PreprocessTXT(EnvSettings):
 
     txt_input: TXTFileInput
     normalized_docs_output: NormalizedDocsOutput
+    normalized_overwritten_file_output: NormalizedTXTOutput
 
 
 class PreprocessBIB(EnvSettings):
@@ -66,6 +80,7 @@ class PreprocessBIB(EnvSettings):
 
     bib_input: BIBFileInput
     normalized_docs_output: NormalizedDocsOutput
+    normalized_overwritten_file_output: NormalizedBIBOutput
 
 
 def _write_preprocessed_docs_to_postgres(
@@ -73,13 +88,7 @@ def _write_preprocessed_docs_to_postgres(
     settings: DatabaseSettings,
 ):
     df = pd.DataFrame(
-        [
-            {
-                "doc_id": d.doc_id,
-                "tokens": d.tokens,
-            }
-            for d in preprocessed_ouput
-        ],
+        [{"doc_id": d.doc_id, "tokens": d.tokens} for d in preprocessed_ouput]
     )
 
     logger.info(
@@ -96,8 +105,12 @@ def _write_preprocessed_docs_to_postgres(
     )
 
 
-def _preprocess_and_store(documents: list[DocumentRecord], settings):
-    """Shared preprocessing logic for TXT and BIB."""
+def _preprocess_and_store(
+    documents: List[DocumentRecord],
+    overwrite_callback,
+    settings,
+) -> List[PreprocessedDocument]:
+
     logger.info(f"Starting preprocessing with {len(documents)} documents")
 
     pre = Preprocessor(
@@ -113,30 +126,49 @@ def _preprocess_and_store(documents: list[DocumentRecord], settings):
     result = pre.generate_normalized_output()
 
     _write_preprocessed_docs_to_postgres(
-        result,
-        settings.normalized_docs_output,
+        result, settings.normalized_docs_output
+    )
+
+    # Overwrite file using injected behavior
+    export_path = Path(
+        f"output.{settings.normalized_overwritten_file_output.FILE_EXT}"
+    )
+    overwrite_callback(result, export_path)
+
+    S3Operations.upload(
+        settings.normalized_overwritten_file_output, export_path
     )
 
     logger.info("Preprocessing completed successfully.")
+    return result
 
 
 @entrypoint(PreprocessTXT)
 def preprocess_txt_file(settings):
-    logger.info("Downloading TXT input from S3...")
+    logger.info("Downloading TXT file...")
     S3Operations.download(settings.txt_input, settings.TXT_DOWNLOAD_PATH)
 
-    texts = TxtLoader.load(settings.TXT_DOWNLOAD_PATH)
+    documents = TxtLoader.load(settings.TXT_DOWNLOAD_PATH)
 
-    _preprocess_and_store(texts, settings)
+    _preprocess_and_store(
+        documents=documents,
+        overwrite_callback=TxtLoader.overwrite_with_results,
+        settings=settings,
+    )
 
 
 @entrypoint(PreprocessBIB)
 def preprocess_bib_file(settings):
-    logger.info("Downloading BIB input from S3...")
+    logger.info("Downloading BIB file...")
     S3Operations.download(settings.bib_input, settings.BIB_DOWNLOAD_PATH)
 
-    texts = BibLoader.load(
-        settings.BIB_DOWNLOAD_PATH,
+    loader = BibLoader(
+        file_path=settings.BIB_DOWNLOAD_PATH,
         attribute=settings.bib_input.SELECTED_ATTRIBUTE,
     )
-    _preprocess_and_store(texts, settings)
+
+    _preprocess_and_store(
+        documents=loader.document_records,
+        overwrite_callback=loader.overwrite_with_results,
+        settings=settings,
+    )
