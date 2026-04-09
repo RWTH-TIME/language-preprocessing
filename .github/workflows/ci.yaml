@@ -24,6 +24,8 @@ jobs:
 
       - name: Run flake8
         uses: py-actions/flake8@v2
+        with:
+          args: --exclude=test
 
   validate-compute-block:
     name: Validate Compute Block Config
@@ -38,7 +40,7 @@ jobs:
       - name: Intall dependencies
         run: |
           pip install -r requirements.txt
-      
+
       - name: Check cbcs
         run: |
           python3 - <<'EOF'
@@ -132,7 +134,7 @@ jobs:
           tags: |
             type=ref, event=pr
             type=raw, value=latest, enable=${{ (github.ref == format('refs/heads/{0}', 'main')) }}
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
