@@ -1,4 +1,3 @@
-import hashlib
 import logging
 
 import pandas as pd
@@ -11,11 +10,12 @@ from scystream.sdk.env.settings import (
     FileSettings,
     InputSettings,
     OutputSettings,
-    PostgresSettings,
+    DatabaseSettings,
 )
 from scystream.sdk.file_handling.s3_manager import S3Operations
-from sqlalchemy import create_engine
-from sqlalchemy.sql import quoted_name
+from scystream.sdk.database_handling.database_manager import (
+    PandasDatabaseOperations,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,22 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _normalize_table_name(table_name: str) -> str:
-    max_length = 63
-    if len(table_name) <= max_length:
-        return table_name
-    digest = hashlib.sha1(table_name.encode("utf-8")).hexdigest()[:10]
-    prefix_length = max_length - len(digest) - 1
-    return f"{table_name[:prefix_length]}_{digest}"
-
-
-def _resolve_db_table(settings: PostgresSettings) -> str:
-    normalized_name = _normalize_table_name(settings.DB_TABLE)
-    settings.DB_TABLE = normalized_name
-    return normalized_name
-
-
-class NormalizedDocsOutput(PostgresSettings, OutputSettings):
+class NormalizedDocsOutput(DatabaseSettings, OutputSettings):
     __identifier__ = "normalized_docs"
 
 
@@ -85,9 +70,8 @@ class PreprocessBIB(EnvSettings):
 
 def _write_preprocessed_docs_to_postgres(
     preprocessed_ouput: list[PreprocessedDocument],
-    settings: PostgresSettings,
+    settings: DatabaseSettings,
 ):
-    resolved_table_name = _resolve_db_table(settings)
     df = pd.DataFrame(
         [
             {
@@ -101,19 +85,14 @@ def _write_preprocessed_docs_to_postgres(
     logger.info(
         "Writing %s processed documents to DB table '%s'…",
         len(df),
-        resolved_table_name,
+        settings.DB_TABLE,
     )
-    engine = create_engine(
-        f"postgresql+psycopg2://{settings.PG_USER}:{settings.PG_PASS}"
-        f"@{settings.PG_HOST}:{int(settings.PG_PORT)}/",
-    )
-
-    table_name = quoted_name(resolved_table_name, quote=True)
-    df.to_sql(table_name, engine, if_exists="replace", index=False)
+    db = PandasDatabaseOperations(settings.DB_DSN)
+    db.write(table=settings.DB_TABLE, data=df)
 
     logger.info(
         "Successfully stored normalized documents into '%s'.",
-        resolved_table_name,
+        settings.DB_TABLE,
     )
 
 

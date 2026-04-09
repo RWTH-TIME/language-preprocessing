@@ -30,12 +30,9 @@ entrypoints:
       normalized_docs_output:
         config:
           normalized_docs_DB_TABLE: null
-          normalized_docs_PG_HOST: null
-          normalized_docs_PG_PASS: null
-          normalized_docs_PG_PORT: null
-          normalized_docs_PG_USER: null
+          normalized_docs_DB_DSN: null
         description: Database Output, containing bib_id aswell as the normalized text
-        type: pg_table
+        type: database_table
   preprocess_txt_file:
     description: Entrypoint to preprocess a .txt file
     envs:
@@ -63,10 +60,7 @@ entrypoints:
       normalized_docs_output:
         config:
           normalized_docs_DB_TABLE: null
-          normalized_docs_PG_HOST: null
-          normalized_docs_PG_PASS: null
-          normalized_docs_PG_PORT: null
-          normalized_docs_PG_USER: null
+          normalized_docs_DB_DSN: null
         description: Database Output, containing bib_id aswell as the normalized text
-        type: pg_table
+        type: database_table
 name: Language-Preprocessing

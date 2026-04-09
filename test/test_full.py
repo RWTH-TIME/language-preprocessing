@@ -48,7 +48,7 @@ def s3_minio():
         "s3",
         endpoint_url="http://localhost:9000",
         aws_access_key_id=MINIO_USER,
-        aws_secret_access_key=MINIO_PWD
+        aws_secret_access_key=MINIO_PWD,
     )
     ensure_bucket(client, BUCKET_NAME)
     return client
@@ -62,16 +62,13 @@ def test_full_bib(s3_minio):
 
     # Upload to MinIO
     s3_minio.put_object(
-        Bucket=BUCKET_NAME,
-        Key=f"{input_file_name}.bib",
-        Body=bib_bytes
+        Bucket=BUCKET_NAME, Key=f"{input_file_name}.bib", Body=bib_bytes
     )
 
     # ENV for preprocess_bib_file
     env = {
         # Preprocessor config
         "UNIGRAM_NORMALIZER": "porter",
-
         # BIB INPUT S3
         "bib_file_S3_HOST": "http://127.0.0.1",
         "bib_file_S3_PORT": "9000",
@@ -81,12 +78,8 @@ def test_full_bib(s3_minio):
         "bib_file_FILE_PATH": "",
         "bib_file_FILE_NAME": input_file_name,
         "bib_file_SELECTED_ATTRIBUTE": "abstract",
-
         # PostgreSQL output
-        "normalized_docs_PG_HOST": "localhost",
-        "normalized_docs_PG_PORT": "5432",
-        "normalized_docs_PG_USER": PG_USER,
-        "normalized_docs_PG_PASS": PG_PASS,
+        "normalized_docs_DB_DSN": f"postgresql://{PG_USER}:{PG_PASS}@127.0.0.1:5432/postgres",
         "normalized_docs_DB_TABLE": "normalized_docs_bib",
     }
 
@@ -109,13 +102,10 @@ def test_full_bib(s3_minio):
 
     # doc_id increments
     assert len(df["doc_id"]) == len(df)  # doc_id count matches rows
-    assert df["doc_id"].is_unique         # no duplicates
+    assert df["doc_id"].is_unique  # no duplicates
     assert all(isinstance(x, str) for x in df["doc_id"])  # Bib IDs are strings
 
-    assert set(df["doc_id"]) == {
-        "WOS:001016714700004",
-        "WOS:001322577100012"
-    }
+    assert set(df["doc_id"]) == {"WOS:001016714700004", "WOS:001322577100012"}
 
     df["tokens"] = df["tokens"].apply(parse_pg_array)
 
@@ -131,14 +121,11 @@ def test_full_txt(s3_minio):
 
     # Upload input to MinIO
     s3_minio.put_object(
-        Bucket=BUCKET_NAME,
-        Key=f"{input_file_name}.txt",
-        Body=txt_bytes
+        Bucket=BUCKET_NAME, Key=f"{input_file_name}.txt", Body=txt_bytes
     )
 
     env = {
         "UNIGRAM_NORMALIZER": "porter",
-
         # TXT input S3
         "txt_file_S3_HOST": "http://127.0.0.1",
         "txt_file_S3_PORT": "9000",
@@ -147,12 +134,8 @@ def test_full_txt(s3_minio):
         "txt_file_BUCKET_NAME": BUCKET_NAME,
         "txt_file_FILE_PATH": "",
         "txt_file_FILE_NAME": input_file_name,
-
         # Postgres output
-        "normalized_docs_PG_HOST": "localhost",
-        "normalized_docs_PG_PORT": "5432",
-        "normalized_docs_PG_USER": PG_USER,
-        "normalized_docs_PG_PASS": PG_PASS,
+        "normalized_docs_DB_DSN": f"postgresql://{PG_USER}:{PG_PASS}@127.0.0.1:5432/postgres",
         "normalized_docs_DB_TABLE": "normalized_docs_txt",
     }
 
