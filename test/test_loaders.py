@@ -13,7 +13,6 @@ def test_txt_loader_reads_and_normalizes():
     result = TxtLoader.load(fname)
     os.unlink(fname)
 
-    # Expect list of DocumentRecord
     assert len(result) == 2
 
     assert isinstance(result[0], DocumentRecord)
@@ -33,11 +32,13 @@ def test_bib_loader_extracts_attribute():
     }
     """
 
-    with tempfile.NamedTemporaryFile("w+", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".bib") as f:
         f.write(bib_content)
         fname = f.name
 
-    result = BibLoader.load(fname, "abstract")
+    loader = BibLoader(file_path=fname, attribute="abstract")
+
+    result = loader.document_records
     os.unlink(fname)
 
     assert len(result) == 1
@@ -45,7 +46,7 @@ def test_bib_loader_extracts_attribute():
     record = result[0]
     assert isinstance(record, DocumentRecord)
 
-    # ID taken from bib entry key: "@article{a,..."
+    # ID taken from entry key
     assert record.doc_id == "a"
 
     # Normalized abstract text
