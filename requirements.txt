@@ -1,4 +1,4 @@
-scystream-sdk[database,postgres]==1.4.0
+scystream-sdk[database,postgres]==1.5.0
 spacy==3.8.7
 nltk==3.9.1
 bibtexparser==1.4.3

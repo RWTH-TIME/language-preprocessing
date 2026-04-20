@@ -31,6 +31,7 @@ entrypoints:
         config:
           normalized_docs_DB_TABLE: null
           normalized_docs_DB_DSN: null
+          normalized_docs_DB_SCHEMA: null
         description: Database Output, containing bib_id aswell as the normalized text
         type: database_table
       normalized_overwritten_file_output:
@@ -73,6 +74,7 @@ entrypoints:
         config:
           normalized_docs_DB_TABLE: null
           normalized_docs_DB_DSN: null
+          normalized_docs_DB_SCHEMA: null
         description: Database Output, containing bib_id aswell as the normalized text
         type: database_table
       normalized_overwritten_file_output:

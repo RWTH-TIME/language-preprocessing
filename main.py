@@ -96,7 +96,7 @@ def _write_preprocessed_docs_to_postgres(
         len(df),
         settings.DB_TABLE,
     )
-    db = PandasDatabaseOperations(settings.DB_DSN)
+    db = PandasDatabaseOperations(settings.DB_DSN, settings.DB_SCHEMA)
     db.write(table=settings.DB_TABLE, data=df)
 
     logger.info(
