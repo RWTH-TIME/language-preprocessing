@@ -178,20 +178,17 @@ class CSVLoader:
 
         output_path = Path.cwd() / export_path.name
 
-        preprocessed_dict = {doc.doc_id: doc for doc in preprocessed_docs}
+        replacement_map = {
+            doc.doc_id: " ".join(doc.tokens) for doc in preprocessed_docs
+        }
 
         updated_df = self.df.copy()
 
-        for idx, row in updated_df.iterrows():
-            doc_id = self._extract_doc_id(row, self.id_column)
-
-            preprocessed = preprocessed_dict.get(doc_id)
-
-            if not preprocessed:
-                continue
-
-            updated_df.at[idx, self.attribute] = " ".join(preprocessed.tokens)
+        updated_df[self.attribute] = (
+            updated_df[self.id_column]
+            .map(replacement_map)
+            .fillna(updated_df[self.attribute])
+        )
 
         updated_df.to_csv(output_path, index=False)
-
         logger.info(f"CSV file successfully written to: {output_path}")
