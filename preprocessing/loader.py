@@ -1,6 +1,7 @@
 import logging
 import re
 import bibtexparser
+import pandas as pd
 from typing import List
 from pathlib import Path
 
@@ -111,3 +112,86 @@ class BibLoader:
             bibtexparser.dump(self.bib_db, f)
 
         logger.info(f"BIB file successfully written to: {output_path}")
+
+
+class CSVLoader:
+    def __init__(self, file_path: str, attribute: str, id_column: str = "id"):
+        logger.info(
+            f"Loading CSV file (attribute={attribute}, id_column={id_column})."
+        )
+
+        self.file_path = file_path
+        self.attribute = attribute
+        self.id_column = id_column
+
+        self.df = pd.read_csv(file_path)
+
+        if self.attribute not in self.df.columns:
+            raise ValueError(
+                f"Column '{self.attribute}' not found in CSV file."
+            )
+
+        if self.id_column not in self.df.columns:
+            raise ValueError(
+                f"ID column '{self.id_column}' not found in CSV file."
+            )
+
+        self.document_records = self._build_document_records()
+
+    @staticmethod
+    def _extract_doc_id(row: pd.Series, id_column: str) -> str:
+        value = row.get(id_column)
+
+        if pd.isna(value):
+            return "UNKNOWN_ID"
+
+        return str(value)
+
+    def _build_document_records(self) -> List[DocumentRecord]:
+        records = []
+
+        for _, row in self.df.iterrows():
+            doc_id = self._extract_doc_id(row, self.id_column)
+
+            raw_value = row.get(self.attribute, "")
+
+            if pd.isna(raw_value):
+                raw_value = ""
+
+            normalized = normalize_text(str(raw_value))
+
+            records.append(
+                DocumentRecord(
+                    doc_id=doc_id,
+                    text=normalized,
+                )
+            )
+
+        return records
+
+    def overwrite_with_results(
+        self,
+        preprocessed_docs: List[PreprocessedDocument],
+        export_path: Path,
+    ) -> None:
+        logger.info("Overwriting CSV documents with preprocessed text...")
+
+        output_path = Path.cwd() / export_path.name
+
+        preprocessed_dict = {doc.doc_id: doc for doc in preprocessed_docs}
+
+        updated_df = self.df.copy()
+
+        for idx, row in updated_df.iterrows():
+            doc_id = self._extract_doc_id(row, self.id_column)
+
+            preprocessed = preprocessed_dict.get(doc_id)
+
+            if not preprocessed:
+                continue
+
+            updated_df.at[idx, self.attribute] = " ".join(preprocessed.tokens)
+
+        updated_df.to_csv(output_path, index=False)
+
+        logger.info(f"CSV file successfully written to: {output_path}")

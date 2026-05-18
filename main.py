@@ -17,7 +17,7 @@ from scystream.sdk.database_handling.database_manager import (
 )
 
 from preprocessing.core import Preprocessor
-from preprocessing.loader import TxtLoader, BibLoader
+from preprocessing.loader import CSVLoader, TxtLoader, BibLoader
 from preprocessing.models import DocumentRecord, PreprocessedDocument
 
 logging.basicConfig(
@@ -48,9 +48,22 @@ class BIBFileInput(FileSettings, InputSettings):
     SELECTED_ATTRIBUTE: str = "Abstract"
 
 
+class CSVFileInput(FileSettings, InputSettings):
+    __identifier__ = "csv_file"
+    FILE_EXT: str = "csv"
+
+    SELECTED_ATTRIBUTE: str = "abstract"
+    ID_COLUMN: str = "id"
+
+
 class NormalizedBIBOutput(FileSettings, OutputSettings):
     __identifier__ = "normalized_overwritten_file_output"
     FILE_EXT: str = "bib"
+
+
+class NormalizedCSVOutput(FileSettings, OutputSettings):
+    __identifier__ = "normalized_overwritten_file_output"
+    FILE_EXT: str = "csv"
 
 
 class PreprocessTXT(EnvSettings):
@@ -81,6 +94,21 @@ class PreprocessBIB(EnvSettings):
     bib_input: BIBFileInput
     normalized_docs_output: NormalizedDocsOutput
     normalized_overwritten_file_output: NormalizedBIBOutput
+
+
+class PreprocessCSV(EnvSettings):
+    LANGUAGE: str = "en"
+    FILTER_STOPWORDS: bool = True
+    UNIGRAM_NORMALIZER: str = "lemma"
+    USE_NGRAMS: bool = True
+    NGRAM_MIN: int = 2
+    NGRAM_MAX: int = 3
+
+    CSV_DOWNLOAD_PATH: str = "/tmp/input.csv"
+
+    csv_input: CSVFileInput
+    normalized_docs_output: NormalizedDocsOutput
+    normalized_overwritten_file_output: NormalizedCSVOutput
 
 
 def _write_preprocessed_docs_to_postgres(
@@ -165,6 +193,24 @@ def preprocess_bib_file(settings):
     loader = BibLoader(
         file_path=settings.BIB_DOWNLOAD_PATH,
         attribute=settings.bib_input.SELECTED_ATTRIBUTE,
+    )
+
+    _preprocess_and_store(
+        documents=loader.document_records,
+        overwrite_callback=loader.overwrite_with_results,
+        settings=settings,
+    )
+
+
+@entrypoint(PreprocessCSV)
+def preprocess_csv_file(settings):
+    logger.info("Downloading CSV file...")
+    S3Operations.download(settings.csv_input, settings.CSV_DOWNLOAD_PATH)
+
+    loader = CSVLoader(
+        file_path=settings.CSV_DOWNLOAD_PATH,
+        attribute=settings.csv_input.SELECTED_ATTRIBUTE,
+        id_column=settings.csv_input.ID_COLUMN,
     )
 
     _preprocess_and_store(
