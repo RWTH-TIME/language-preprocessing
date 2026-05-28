@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 
 from pathlib import Path
-from typing import List
+from typing import Callable, List, Optional
 from scystream.sdk.core import entrypoint
 from scystream.sdk.env.settings import (
     EnvSettings,
@@ -108,7 +108,10 @@ class PreprocessCSV(EnvSettings):
 
     csv_input: CSVFileInput
     normalized_docs_output: NormalizedDocsOutput
-    normalized_overwritten_file_output: NormalizedCSVOutput
+
+
+#    TODO: As CSVs might be very large, we do not write the csv output
+#    normalized_overwritten_file_output: NormalizedCSVOutput
 
 
 def _write_preprocessed_docs_to_postgres(
@@ -135,7 +138,7 @@ def _write_preprocessed_docs_to_postgres(
 
 def _preprocess_and_store(
     documents: List[DocumentRecord],
-    overwrite_callback,
+    overwrite_callback: Optional[Callable],
     settings,
 ) -> List[PreprocessedDocument]:
 
@@ -158,14 +161,15 @@ def _preprocess_and_store(
     )
 
     # Overwrite file using injected behavior
-    export_path = Path(
-        f"output.{settings.normalized_overwritten_file_output.FILE_EXT}"
-    )
-    overwrite_callback(result, export_path)
+    if overwrite_callback:
+        export_path = Path(
+            f"output.{settings.normalized_overwritten_file_output.FILE_EXT}"
+        )
+        overwrite_callback(result, export_path)
 
-    S3Operations.upload(
-        settings.normalized_overwritten_file_output, export_path
-    )
+        S3Operations.upload(
+            settings.normalized_overwritten_file_output, export_path
+        )
 
     logger.info("Preprocessing completed successfully.")
     return result
@@ -215,6 +219,6 @@ def preprocess_csv_file(settings):
 
     _preprocess_and_store(
         documents=loader.document_records,
-        overwrite_callback=loader.overwrite_with_results,
+        overwrite_callback=None,
         settings=settings,
     )

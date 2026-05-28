@@ -211,14 +211,6 @@ def test_full_csv(s3_minio):
         ),
         "normalized_docs_DB_TABLE": "normalized_docs_csv",
         "normalized_docs_DB_SCHEMA": DB_SCHEMA,
-        # overwritten CSV output
-        "normalized_overwritten_file_output_S3_HOST": "http://127.0.0.1",
-        "normalized_overwritten_file_output_S3_PORT": "9000",
-        "normalized_overwritten_file_output_S3_ACCESS_KEY": MINIO_USER,
-        "normalized_overwritten_file_output_S3_SECRET_KEY": MINIO_PWD,
-        "normalized_overwritten_file_output_BUCKET_NAME": BUCKET_NAME,
-        "normalized_overwritten_file_output_FILE_PATH": "",
-        "normalized_overwritten_file_output_FILE_NAME": OUTPUT_FILE_NAME,
     }
 
     for k, v in env.items():
