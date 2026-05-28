@@ -1,0 +1,6 @@
+id,title,abstract
+1,Neural Network Optimization,"This invention relates to optimizing neural network training using adaptive gradient techniques and distributed computation."
+2,Battery Management System,"A system for monitoring lithium ion battery health, temperature regulation, and charge balancing in electric vehicles."
+3,Medical Imaging Analysis,"Methods for automated tumor detection in MRI scans using convolutional neural networks and image segmentation."
+4,Autonomous Navigation,"A navigation framework for autonomous mobile robots using sensor fusion and probabilistic path planning."
+5,Natural Language Processing,"Techniques for multilingual text classification and semantic similarity detection using transformer architectures."

@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 
 from pathlib import Path
-from main import preprocess_bib_file, preprocess_txt_file
+from main import preprocess_bib_file, preprocess_txt_file, preprocess_csv_file
 from botocore.exceptions import ClientError
 from sqlalchemy import create_engine
 
@@ -14,6 +14,7 @@ BUCKET_NAME = "testbucket"
 
 PG_USER = "postgres"
 PG_PASS = "postgres"
+DB_SCHEMA = ""
 
 INPUT_FILE_NAME = "input"
 OUTPUT_FILE_NAME = "output"
@@ -82,6 +83,7 @@ def test_full_bib(s3_minio):
         # PostgreSQL output
         "normalized_docs_DB_DSN": f"postgresql://{PG_USER}:{PG_PASS}@127.0.0.1:5432/postgres",
         "normalized_docs_DB_TABLE": "normalized_docs_bib",
+        "normalized_docs_DB_SCHEMA": DB_SCHEMA,
         "normalized_overwritten_file_output_S3_HOST": "http://127.0.0.1",
         "normalized_overwritten_file_output_S3_PORT": "9000",
         "normalized_overwritten_file_output_S3_ACCESS_KEY": MINIO_USER,
@@ -145,6 +147,7 @@ def test_full_txt(s3_minio):
         # Postgres output
         "normalized_docs_DB_DSN": f"postgresql://{PG_USER}:{PG_PASS}@127.0.0.1:5432/postgres",
         "normalized_docs_DB_TABLE": "normalized_docs_txt",
+        "normalized_docs_DB_SCHEMA": DB_SCHEMA,
         "normalized_overwritten_file_output_S3_HOST": "http://127.0.0.1",
         "normalized_overwritten_file_output_S3_PORT": "9000",
         "normalized_overwritten_file_output_S3_ACCESS_KEY": MINIO_USER,
@@ -173,6 +176,70 @@ def test_full_txt(s3_minio):
 
     df["tokens"] = df["tokens"].apply(parse_pg_array)
 
+    assert isinstance(df.iloc[0]["tokens"], list)
+    assert all(isinstance(t, str) for t in df.iloc[0]["tokens"])
+
+    # TODO: Test overwritten file upload
+
+
+def test_full_csv(s3_minio):
+    csv_path = Path(__file__).parent / "files" / f"{INPUT_FILE_NAME}.csv"
+    csv_bytes = csv_path.read_bytes()
+
+    # Upload input to MinIO
+    s3_minio.put_object(
+        Bucket=BUCKET_NAME,
+        Key=f"{INPUT_FILE_NAME}.csv",
+        Body=csv_bytes,
+    )
+
+    env = {
+        "UNIGRAM_NORMALIZER": "porter",
+        # CSV input S3
+        "csv_file_S3_HOST": "http://127.0.0.1",
+        "csv_file_S3_PORT": "9000",
+        "csv_file_S3_ACCESS_KEY": MINIO_USER,
+        "csv_file_S3_SECRET_KEY": MINIO_PWD,
+        "csv_file_BUCKET_NAME": BUCKET_NAME,
+        "csv_file_FILE_PATH": "",
+        "csv_file_FILE_NAME": INPUT_FILE_NAME,
+        "csv_file_SELECTED_ATTRIBUTE": "abstract",
+        "csv_file_ID_COLUMN": "id",
+        # PostgreSQL output
+        "normalized_docs_DB_DSN": (
+            f"postgresql://{PG_USER}:{PG_PASS}@127.0.0.1:5432/postgres"
+        ),
+        "normalized_docs_DB_TABLE": "normalized_docs_csv",
+        "normalized_docs_DB_SCHEMA": DB_SCHEMA,
+    }
+
+    for k, v in env.items():
+        os.environ[k] = v
+
+    # Run block
+    preprocess_csv_file()
+
+    # Query PostgreSQL
+    engine = create_engine(
+        f"postgresql+psycopg2://{PG_USER}:{PG_PASS}@localhost:5432/"
+    )
+
+    df = pd.read_sql_table("normalized_docs_csv", engine)
+
+    # Assertions
+    assert len(df) > 0
+    assert "doc_id" in df.columns
+    assert "tokens" in df.columns
+
+    # IDs
+    assert len(df["doc_id"]) == len(df)
+    assert df["doc_id"].is_unique
+    assert all(isinstance(x, str) for x in df["doc_id"])
+
+    # Convert PG arrays
+    df["tokens"] = df["tokens"].apply(parse_pg_array)
+
+    # Token structure
     assert isinstance(df.iloc[0]["tokens"], list)
     assert all(isinstance(t, str) for t in df.iloc[0]["tokens"])
 

@@ -75,7 +75,7 @@ entrypoints:
           normalized_docs_DB_TABLE: null
           normalized_docs_DB_DSN: null
           normalized_docs_DB_SCHEMA: null
-        description: Database Output, containing bib_id aswell as the normalized text
+        description: Database Output, containing id aswell as the normalized text
         type: database_table
       normalized_overwritten_file_output:
         config:
@@ -89,4 +89,37 @@ entrypoints:
           normalized_overwritten_file_output_S3_SECRET_KEY: null
         description: The File Input Overwritten with the normalized output
         type: file
+  preprocess_csv_file:
+    description: Entrypoint to preprocess a column of a .csv file
+    envs:
+      CSV_DOWNLOAD_PATH: /tmp/input.csv
+      FILTER_STOPWORDS: true
+      LANGUAGE: en
+      NGRAM_MAX: 3
+      NGRAM_MIN: 2
+      UNIGRAM_NORMALIZER: lemma
+      USE_NGRAMS: true
+    inputs:
+      csv_input:
+        config:
+          csv_file_BUCKET_NAME: null
+          csv_file_FILE_EXT: csv
+          csv_file_FILE_NAME: null
+          csv_file_FILE_PATH: null
+          csv_file_ID_COLUMN: id
+          csv_file_S3_ACCESS_KEY: null
+          csv_file_S3_HOST: null
+          csv_file_S3_PORT: null
+          csv_file_S3_SECRET_KEY: null
+          csv_file_SELECTED_ATTRIBUTE: abstract
+        description: A .csv file, the selected attribute will be treated as a document
+        type: file
+    outputs:
+      normalized_docs_output:
+        config:
+          normalized_docs_DB_DSN: null
+          normalized_docs_DB_SCHEMA: null
+          normalized_docs_DB_TABLE: null
+        description: Database Output, containing csv_id aswell as the normalized text
+        type: database_table
 name: Language-Preprocessing
